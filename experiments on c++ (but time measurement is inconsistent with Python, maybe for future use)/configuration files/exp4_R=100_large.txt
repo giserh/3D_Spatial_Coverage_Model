@@ -1,0 +1,10 @@
+title: exp4_R=100,alg=1,2,3_large
+dataset: /Users/mazeyu/Downloads/coverage_3D/extracted-data.csv
+alg: 1, 2, 3
+angles: 0, 8, 8
+cells: 0, 0, 8
+R: 100
+alpha: 45
+cubeSize: 100
+names: alg1, alg2, alg3
+num: 100

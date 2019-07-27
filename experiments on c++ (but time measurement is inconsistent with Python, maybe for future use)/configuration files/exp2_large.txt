@@ -1,0 +1,10 @@
+title: exp2_with_alg2_large
+dataset: /Users/mazeyu/Downloads/coverage_3D/extracted-data.csv
+alg: 2, 2, 2, 2
+angles: 2, 4, 8, 16
+cells: 0, 0, 0, 0
+R: 50
+alpha: 45
+cubeSize: 100
+names: angles=2, angles=4, angles=8, angles=16
+num: 100

@@ -1,0 +1,10 @@
+title: exp5_with_alg2_large
+dataset: /Users/mazeyu/Downloads/coverage_3D/extracted-data.csv
+alg: 2
+angles: 8
+cells: 0
+R: 50
+alpha: 45
+cubeSize: 100, 200
+names: cubeSize=100, cubeSize=200
+num: 100
