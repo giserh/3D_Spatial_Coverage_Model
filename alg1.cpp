@@ -102,7 +102,7 @@ int main() {
 //            cout << cnttt << endl;
 //
 //        }
-    int iter = 1000;
+    int iter = 1000 / 8;
     int cnt = 0;
     for (int it = 0; it < iter; it++) {
         double pt[3];

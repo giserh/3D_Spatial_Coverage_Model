@@ -4,7 +4,7 @@
 
 #ifndef COVERAGE_DATABASE_H
 #define COVERAGE_DATABASE_H
-#define N 1000000
+//#define N 1000000
 #include <fstream>
 #include <iostream>
 #include <cstdio>
@@ -12,8 +12,13 @@
 #include <math.h>
 #include <thread>
 #include <vector>
+#include <chrono>
+
+
+
 
 using namespace std;
+using namespace std::chrono;
 
 
 struct box {
@@ -24,12 +29,14 @@ struct box {
         return z;
     }
 };
+
 struct point3 {
     double a[3];
     double &operator [] (int i) {
         return a[i];
     }
 };
+
 struct points53 {
     point3 a[5];
     point3 &operator [] (int i) {
@@ -37,9 +44,27 @@ struct points53 {
     }
 };
 
+
+struct node {
+    node *lc, *rc;
+    box b;
+    int l, r;
+    int dim;
+};
+
+
+
 class database {
+
+
+public:
+
     vector<double> lat, lng, hgt, yaw, pitch, roll, timestamp;
     vector<points53> points;
+
+    vector<point3> pointOne;
+    vector<int> ind;
+    node *root;
 
     double lat_min, lat_max, lat_scale;
     double lng_min, lng_max, lng_scale;
@@ -50,15 +75,22 @@ class database {
     box bound;
     vector<box> bds;
 
-public:
-    database(string dataFile, double R=50, double alpha=45, bool extrinsic=true);
+    database(string dataFile, double R=50, double alpha=45, int st=0, int ed=-1, bool extrinsic=true);
     double query(box q, int threadNum=10);
+    double query_alwayssubsetting(box q, int threadNum=10);
+
     double query2(box q, int angles=8, int threadNum=10);
     double query3(box q, int angles=8, int cells=8, int threadNum=10);
 
 
     void generateQueries(string file, int n);
     void generateQueriesGuaranteeIntersection(string file, int n, double size);
+
+    void generateContinuousQueries(string file, int n, double size);
+    void generateExpandingQueries(string file, int n, double size);
+    void generateRisingQueries(string file, int n = 3, double size = 100);
+    void generateBoundQueries(string file);
+
 
 };
 

@@ -68,7 +68,7 @@ int main() {
                 }
 
 
-                weights[i][j][k] = cnt? (1 - sum / cnt / Rv): 0;
+                weights[i][j][k] = cnt? (1 - sum / cnt / Rv): 1;
 
 
             }
@@ -84,7 +84,7 @@ int main() {
 
     }
     double cnt = 0;
-    int iter = 1000 / cells / cells / cells + 1;
+    int iter = 1000.0 / cells / cells / cells / 8 + 1;
 
     for (int i = 0; i < cells; i++)
         for (int j = 0; j < cells; j++)

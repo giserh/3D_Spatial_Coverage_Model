@@ -4,11 +4,77 @@
 
 #include "database.h"
 
+#define SUBSETTING
+//#define KDTREE
+
 #define M 10000
 
 #include <ctime>
 
-database::database(string dataFile, double R, double alpha, bool extrinsic) : Rv(R), alpha(alpha) {
+node *build(vector<point3> &pts, vector<int> &index, int l, int r, box B) {
+    node *cur = new node;
+    cur->b = B;
+    cur->l = l;
+    cur->r = r;
+
+
+    if (r >= l + 1) {
+//        cout << l << " " << r << endl;
+        box bound;
+        for (int i = 0; i < 3; i++) {
+            bound[i][0] = 1e9;
+            bound[i][1] = -1e9;
+        }
+        for (int i = l; i < r; i++) {
+            auto point = pts[index[i]];
+            for (int k = 0; k < 3; k++) {
+                if (point[k] < bound[k][0]) bound[k][0] = point[k];
+                if (point[k] > bound[k][1]) bound[k][1] = point[k];
+            }
+        }
+        cur->b = B = bound;
+
+        if (fabs(B[0][1] - B[0][0]) < 1e-8 || fabs(B[1][1] - B[1][0]) < 1e-8 || fabs(B[2][1] - B[2][0]) < 1e-8) {
+            cur->lc = cur->rc = NULL;
+            return cur;
+        }
+    }
+
+    if (r <= l + 1) {
+        cur->lc = cur->rc = NULL;
+        return cur;
+    }
+
+
+    double maxSpan = 0;
+    int maxDim = -1;
+    for (int i = 0; i < 3; i++) {
+        if (B[i][1] - B[i][0] > maxSpan) {
+            maxSpan = B[i][1] - B[i][0];
+            maxDim = i;
+        }
+    }
+    box b1 = B, b2 = B;
+    b2[maxDim][0] = b1[maxDim][1] = (B[maxDim][0] + B[maxDim][1]) / 2;
+    int p = l, q = r - 1;
+    while (p <= q) {
+        while (p < r && pts[index[p]][maxDim] < b1[maxDim][1]) p++;
+        while (q >= l && pts[index[q]][maxDim] > b1[maxDim][1]) q--;
+        if (p < q) {
+            swap(index[p], index[q]);
+            p++;
+            q--;
+        }
+    }
+    cur->dim = maxDim;
+    cur->lc = build(pts, index, l, p, b1);
+    cur->rc = build(pts, index, p, r, b2);
+
+    return cur;
+}
+
+
+database::database(string dataFile, double R, double alpha, int st, int ed, bool extrinsic) : Rv(R), alpha(alpha) {
     FILE *fp;
     fp = fopen(dataFile.c_str(), "r");
     char x[100];
@@ -21,17 +87,22 @@ database::database(string dataFile, double R, double alpha, bool extrinsic) : Rv
 
     while (fscanf(fp, "%lf,%lf,%lf,%lf,%lf,%lf,%lf", &lat_, &lng_, &hgt_, &yaw_, &pitch_,
                   &roll_, &timestamp_) != -1) {
-        lat.push_back(lat_);
-        lng.push_back(lng_);
-        hgt.push_back(hgt_);
-        yaw.push_back(yaw_);
-        pitch.push_back(pitch_);
-        roll.push_back(roll_);
-        timestamp.push_back(timestamp_);
+        if (cnt >= st) {
+            lat.push_back(lat_);
+            lng.push_back(lng_);
+            hgt.push_back(hgt_);
+            yaw.push_back(yaw_);
+            pitch.push_back(pitch_);
+            roll.push_back(roll_);
+            timestamp.push_back(timestamp_);
+        }
+
 //        cout << lat << " " << lng << " " << hgt << " " << yaw << " " << pitch << " " << roll << " " << t << endl;
         cnt++;
+        if (cnt == ed) break;
     }
 
+    cnt = lat.size();
     cout << "Load data: " << cnt << endl;
     lat_min = 1e9;
     lat_max = -1e9;
@@ -123,7 +194,20 @@ database::database(string dataFile, double R, double alpha, bool extrinsic) : Rv
 
     }
 
+    int k = 0;
+    for (auto p5: points) {
+        point3 mid = p5[0];
+        for (int i = 0; i < 3; i++)
+            for (int j = 1; j < 5; j++)
+                mid[i] += p5[j][i] / 4;
+        for (int i = 0; i < 3; i++) mid[i] /= 2;
+        pointOne.push_back(mid);
+        ind.push_back(k++);
+    }
+    root = build(pointOne, ind, 0, k, bound);
+
     cout << "using time: " << clock() - start << endl;
+
 
 //    start = 0;
 //    cout << "coverage of the bounding box: " << query(bound) << endl;
@@ -138,7 +222,41 @@ double det(double a[3][3]) {
            a[0][2] * a[1][0] * a[2][1] - a[0][2] * a[1][1] * a[2][0];
 }
 
-double database::query(box q, int threadNum) {
+
+vector<int> findInd(node *cur, box B, vector<point3> &points, vector<int> &index) {
+    if (cur == NULL || cur->l == cur->r) return vector<int>();
+    if (cur->lc == NULL) {
+        vector<int> ans;
+        for (int i = cur->l; i < cur->r; i++) ans.push_back(i);
+        return ans;
+    }
+
+    for (int j = 0; j < 3; j++)
+        if (cur->b[j][0] > B[j][1] || cur->b[j][1] < B[j][0])
+            return vector<int>();
+
+    bool full = 1;
+    for (int i = 0; i < 3; i++) {
+        full &= B[i][1] >= cur->b[i][1];
+        B[i][1] = min(B[i][1], cur->b[i][1]);
+    }
+    for (int i = 0; i < 3; i++) {
+        full &= B[i][0] <= cur->b[i][0];
+        B[i][0] = max(B[i][0], cur->b[i][0]);
+    }
+    if (full) {
+        vector<int> ans;
+        for (int i = cur->l; i < cur->r; i++) ans.push_back(i);
+        return ans;
+    }
+    auto v1 = findInd(cur->lc, B, points, index);
+    auto v2 = findInd(cur->rc, B, points, index);
+    v1.insert(v1.end(), v2.begin(), v2.end());
+    return v1;
+}
+
+
+double database::query_alwayssubsetting(box q, int threadNum) {
     int faces[6][3] = {2, 1, 0, 4, 2, 0, 3, 4, 0, 1, 3, 0, 1, 2, 3, 3, 2, 4};
 
 
@@ -147,14 +265,22 @@ double database::query(box q, int threadNum) {
     double ans[threadNum];
     vector<int> index;
 
+    auto start = high_resolution_clock::now();
+
     for (int i = 0; i < cnt; i++) {
+
         bool flag[3];
         for (int j = 0; j < 3; j++) flag[j] = bds[i][j][0] > q[j][1] || bds[i][j][1] < q[j][0];
         if (flag[0] || flag[1] || flag[2]) continue;
         index.push_back(i);
     }
 
+
+    cout << "size: " << index.size() << endl;
+//    cout << "time in subsetting: " << duration_cast<microseconds>(high_resolution_clock::now() - start).count() << endl;
+
 //    cout << index.size() << " of " << cnt << " intersected" << endl;
+    start = high_resolution_clock::now();
 
     for (int t = 0; t < threadNum; t++)
         threads[t] = thread([=, &ans, &index]() {
@@ -189,6 +315,92 @@ double database::query(box q, int threadNum) {
     for (int t = 0; t < threadNum; t++) threads[t].join();
     double ans_ = 0;
     for (int i = 0; i < threadNum; i++) ans_ += ans[i];
+//    cout << "time in MC: " << duration_cast<microseconds>(high_resolution_clock::now() - start).count() << endl;
+
+    return ans_ / threadNum;
+
+}
+
+
+double database::query(box q, int threadNum) {
+    int faces[6][3] = {2, 1, 0, 4, 2, 0, 3, 4, 0, 1, 3, 0, 1, 2, 3, 3, 2, 4};
+
+
+    thread threads[threadNum];
+    int iter = int(1000.0 / threadNum + 0.99);
+    double ans[threadNum];
+    vector<int> index;
+
+    auto start = high_resolution_clock::now();
+
+#ifdef KDTREE
+    auto qq = q;
+    for (int i = 0; i < 3; i++) {
+        qq[i][0] -= Rv;
+        qq[i][1] += Rv;
+    }
+    auto index_ = findInd(root, qq, pointOne, ind);
+    cout << "size_: " << index_.size() << endl;
+    for (int i:index_) {
+        bool flag[3];
+        for (int j = 0; j < 3; j++) flag[j] = bds[i][j][0] > q[j][1] || bds[i][j][1] < q[j][0];
+        if (flag[0] || flag[1] || flag[2]) continue;
+        index.push_back(i);
+    }
+//    cout << "found " << index.size() << endl;
+#else
+
+    for (int i = 0; i < cnt; i++) {
+#ifdef SUBSETTING
+        bool flag[3];
+        for (int j = 0; j < 3; j++) flag[j] = bds[i][j][0] > q[j][1] || bds[i][j][1] < q[j][0];
+        if (flag[0] || flag[1] || flag[2]) continue;
+#endif
+        index.push_back(i);
+    }
+#endif
+
+    cout << "size: " << index.size() << endl;
+//    cout << "time in subsetting: " << duration_cast<microseconds>(high_resolution_clock::now() - start).count() << endl;
+
+//    cout << index.size() << " of " << cnt << " intersected" << endl;
+    start = high_resolution_clock::now();
+
+    for (int t = 0; t < threadNum; t++)
+        threads[t] = thread([=, &ans, &index]() {
+            int hit = 0;
+            for (int it = 0; it < iter; it++) {
+                double pt[3];
+                pt[0] = q.x[0] + (q.x[1] - q.x[0]) * (rand() % M) / M;
+                pt[1] = q.y[0] + (q.y[1] - q.y[0]) * (rand() % M) / M;
+                pt[2] = q.z[0] + (q.z[1] - q.z[0]) * (rand() % M) / M;
+
+                for (int i: index) {
+                    bool flag = true;
+                    for (int j = 0; j < 6; j++) {
+                        double a[3][3];
+                        for (int k = 0; k < 3; k++)
+                            for (int p = 0; p < 3; p++)
+                                a[k][p] = points[i][faces[j][k]][p] - pt[p];
+                        double v = det(a);
+                        if (v < 0) {
+                            flag = false;
+                            break;
+                        }
+                    }
+                    if (flag) {
+                        hit += 1;
+                        break;
+                    }
+                }
+            }
+            ans[t] = hit * 1.0 / iter;
+        });
+    for (int t = 0; t < threadNum; t++) threads[t].join();
+    double ans_ = 0;
+    for (int i = 0; i < threadNum; i++) ans_ += ans[i];
+//    cout << "time in MC: " << duration_cast<microseconds>(high_resolution_clock::now() - start).count() << endl;
+
     return ans_ / threadNum;
 
 }
@@ -203,14 +415,33 @@ double database::query2(box q, int angles, int threadNum) {
     double ans[threadNum];
     vector<int> index[angles];
 
-    for (int i = 0; i < cnt; i++) {
+#ifdef KDTREE
+    auto qq = q;
+    for (int i = 0; i < 3; i++) {
+        qq[i][0] -= Rv;
+        qq[i][1] += Rv;
+    }
+    auto index_ = findInd(root, qq, pointOne, ind);
+    for (int i: index_) {
         bool flag[3];
         for (int j = 0; j < 3; j++) flag[j] = bds[i][j][0] > q[j][1] || bds[i][j][1] < q[j][0];
         if (flag[0] || flag[1] || flag[2]) continue;
         int discAngle = int((yaw[i] + acos(-1)) / (2 * acos(-1)) * angles);
         index[discAngle].push_back(i);
     }
+#else
 
+    for (int i = 0; i < cnt; i++) {
+#ifdef SUBSETTING
+        bool flag[3];
+        for (int j = 0; j < 3; j++) flag[j] = bds[i][j][0] > q[j][1] || bds[i][j][1] < q[j][0];
+        if (flag[0] || flag[1] || flag[2]) continue;
+#endif
+        int discAngle = int((yaw[i] + acos(-1)) / (2 * acos(-1)) * angles);
+        index[discAngle].push_back(i);
+    }
+
+#endif
 
     for (int t = 0; t < threadNum; t++)
         threads[t] = thread([=, &ans, &index]() {
@@ -259,13 +490,33 @@ double database::query3(box q, int angles, int cells, int threadNum) {
 
     vector<int> index[angles];
 
-    for (int i = 0; i < cnt; i++) {
+#ifdef KDTREE
+    auto qq = q;
+    for (int i = 0; i < 3; i++) {
+        qq[i][0] -= Rv;
+        qq[i][1] += Rv;
+    }
+    auto index_ = findInd(root, qq, pointOne, ind);
+    for (int i: index_) {
         bool flag[3];
         for (int j = 0; j < 3; j++) flag[j] = bds[i][j][0] > q[j][1] || bds[i][j][1] < q[j][0];
         if (flag[0] || flag[1] || flag[2]) continue;
         int discAngle = int((yaw[i] + acos(-1)) / (2 * acos(-1)) * angles);
         index[discAngle].push_back(i);
     }
+#else
+
+    for (int i = 0; i < cnt; i++) {
+#ifdef SUBSETTING
+        bool flag[3];
+        for (int j = 0; j < 3; j++) flag[j] = bds[i][j][0] > q[j][1] || bds[i][j][1] < q[j][0];
+        if (flag[0] || flag[1] || flag[2]) continue;
+#endif
+        int discAngle = int((yaw[i] + acos(-1)) / (2 * acos(-1)) * angles);
+        index[discAngle].push_back(i);
+    }
+
+#endif
 
     double weights[16][16][16];
     for (int i = 0; i < cells; i++)
@@ -306,7 +557,8 @@ double database::query3(box q, int angles, int cells, int threadNum) {
 
                         if (k + j * cells + i * cells * cells < cells * cells * cells * t / threadNum) continue;
                         if ((i != cells - 1 || j != cells - 1 || k != cells - 1) &&
-                        k + j * cells + i * cells * cells >= cells * cells * cells * (t + 1) / threadNum) continue;
+                            k + j * cells + i * cells * cells >= cells * cells * cells * (t + 1) / threadNum)
+                            continue;
 
                         double x_[2], y_[2], z_[2], size = (q.x[1] - q.x[0]) / cells;
                         x_[0] = q.x[0] + (q.x[1] - q.x[0]) * i / cells;
@@ -372,6 +624,134 @@ void database::generateQueries(string file, int n) {
 
 }
 
+void database::generateContinuousQueries(string file, int n, double size) {
+    FILE *fp;
+    fp = fopen(file.c_str(), "w");
+    vector<box> boxes;
+    for (int k = 0; k < n; k++) {
+        box cur;
+        for (int i = 0; i < 3; i++) {
+            cur[i][0] = bound[i][0] + (bound[i][1] - bound[i][0]) * k / n - size / 2;
+            cur[i][1] = bound[i][0] + (bound[i][1] - bound[i][0]) * k / n + size / 2;
+        }
+        fprintf(fp, "%lf %lf %lf %lf %lf %lf ", ((cur[1][0] + cur[1][1]) / 2 + y_center) / lat_scale,
+                ((cur[0][0] + cur[0][1]) / 2 + x_center) / lng_scale,
+                ((cur[2][0] + cur[2][1]) / 2 + z_center) / hgt_scale,
+                size, size, size
+        );
+        boxes.push_back(cur);
+
+        double ans1 = query(cur), ans2 = query2(cur), ans3 = query3(cur);
+//        cout << ans1 << " " << ans2 << " " << ans3 << endl;
+
+        fprintf(fp, "%.4lf %.4lf %.4lf\n", ans1, ans2, ans3);
+    }
+    fclose(fp);
+}
+
+void database::generateExpandingQueries(string file, int n, double size0) {
+    FILE *fp;
+    fp = fopen(file.c_str(), "w");
+    vector<box> boxes;
+    for (int k = 0; k < n; k++) {
+        box cur;
+        double size = size0 + 5.0 * k / n * size0;
+        for (int i = 0; i < 3; i++) {
+            cur[i][0] = (bound[i][1] + bound[i][0]) / 2 - size / 2;
+            cur[i][1] = (bound[i][1] + bound[i][0]) / 2 + size / 2;
+        }
+        cur[2][0] = (bound[2][1] + bound[2][0]) / 2 - size0 / 2;
+        cur[2][1] = (bound[2][1] + bound[2][0]) / 2 + size0 / 2;
+
+        fprintf(fp, "%lf %lf %lf %lf %lf %lf ", ((cur[1][0] + cur[1][1]) / 2 + y_center) / lat_scale,
+                ((cur[0][0] + cur[0][1]) / 2 + x_center) / lng_scale,
+                ((cur[2][0] + cur[2][1]) / 2 + z_center) / hgt_scale,
+                size, size, size0
+        );
+        boxes.push_back(cur);
+
+        double ans1 = query(cur), ans2 = query2(cur), ans3 = query3(cur);
+//        cout << ans1 << " " << ans2 << " " << ans3 << endl;
+
+        fprintf(fp, "%.4lf %.4lf %.4lf\n", ans1, ans2, ans3);
+    }
+    fclose(fp);
+}
+
+void database::generateRisingQueries(string file, int n, double size) {
+    FILE *fp;
+    fp = fopen(file.c_str(), "w");
+    vector<box> boxes;
+
+    auto x = points[0][0][0];
+    auto y = points[0][0][1];
+    auto z = points[0][0][2];
+
+    for (int k = 0; k < n; k++) {
+        box cur;
+
+
+        cur[0][0] = x - size / 2;
+        cur[0][1] = x + size / 2;
+
+        cur[1][0] = y - size / 2;
+        cur[1][1] = y + size / 2;
+
+        cur[2][0] = z - size / 2 - size * k;
+        cur[2][1] = z + size / 2 - size * k;
+
+
+
+
+        fprintf(fp, "%lf %lf %lf %lf %lf %lf ", ((cur[1][0] + cur[1][1]) / 2 + y_center) / lat_scale,
+                ((cur[0][0] + cur[0][1]) / 2 + x_center) / lng_scale,
+                ((cur[2][0] + cur[2][1]) / 2 + z_center) / hgt_scale,
+                size, size, size
+        );
+
+        boxes.push_back(cur);
+
+        double ans1 = query(cur), ans2 = query2(cur), ans3 = query3(cur);
+//        cout << ans1 << " " << ans2 << " " << ans3 << endl;
+
+        fprintf(fp, "%.4lf %.4lf %.4lf\n", ans1, ans2, ans3);
+    }
+    fclose(fp);
+}
+
+void database::generateBoundQueries(string file) {
+    FILE *fp;
+    fp = fopen(file.c_str(), "w");
+
+    box cur = bound;
+    cur[2][0] = 414 - z_center;
+    auto sk = 250;
+    cur[0][0] += sk;
+    cur[1][0] += sk;
+    cur[0][1] -= sk;
+    cur[1][1] -= sk;
+
+
+    fprintf(fp, "%lf %lf %lf %lf %lf %lf ", ((cur[1][0] + cur[1][1]) / 2 + y_center) / lat_scale,
+            ((cur[0][0] + cur[0][1]) / 2 + x_center) / lng_scale,
+            ((cur[2][0] + cur[2][1]) / 2 + z_center) / hgt_scale,
+            cur[1][1] - cur[1][0],
+            cur[0][1] - cur[0][0],
+            cur[2][1] - cur[2][0]
+    );
+
+
+
+    double ans1 = query(cur), ans2 = query2(cur), ans3 = query3(cur);
+//        cout << ans1 << " " << ans2 << " " << ans3 << endl;
+
+    fprintf(fp, "%.4lf %.4lf %.4lf\n", ans1, ans2, ans3);
+
+    fclose(fp);
+}
+
+
+
 void database::generateQueriesGuaranteeIntersection(string file, int n, double size) {
     FILE *fp;
     fp = fopen(file.c_str(), "w");
@@ -386,7 +766,7 @@ void database::generateQueriesGuaranteeIntersection(string file, int n, double s
             q[k][0] = pt[k] - size / 2;
             q[k][1] = pt[k] + size / 2;
         }
-        double c = query(q);
+        double c = query_alwayssubsetting(q);
         if (c > 1e-5) {
 //            cout << c << " " << query2(q) << " " << query3(q) << endl;
             fprintf(fp, "%lf %lf %lf\n", pt[0], pt[1], pt[2]);

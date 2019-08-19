@@ -113,6 +113,7 @@ void generateFile(string infoFile) {
                     ifstream queryFile("queries_" + title + ".txt");
 
                     for (int it = 0; it < num; it++) {
+                        cout << "it: " << it << endl;
                         double x, y, z;
                         queryFile >> x >> y >> z;
 //                        cout << x << " " << y << " " << z << endl;
@@ -123,7 +124,7 @@ void generateFile(string infoFile) {
                         q.y[1] = y + cubeSize / 2;
                         q.z[0] = z - cubeSize / 2;
                         q.z[1] = z + cubeSize / 2;
-                        int start = clock();
+                        auto start = high_resolution_clock::now();
                         double ans;
                         if (algs[iAlg] == "1") {
                             ans = db.query(q);
@@ -134,7 +135,7 @@ void generateFile(string infoFile) {
                         else if (algs[iAlg] == "3") {
                             ans = db.query3(q, angles[iAlg], cells[iAlg]);
                         }
-                        int duration = clock() - start;
+                        int duration = duration_cast<microseconds>(high_resolution_clock::now() - start).count();
                         ansList[it].push_back(ans);
                         timeList[it].push_back(duration);
                     }
@@ -163,11 +164,38 @@ void generateFile(string infoFile) {
         out << endl;
 
     }
+    for (int j = 0; j < names.size(); j++) {
+        double sum = 0;
+        for (int i = 0; i < num; i++) sum += ansList[i][j];
+        sum /= num;
+        cout << sum * 100 << endl;
+    }
     out.close();
 }
 
+
+
 int main() {
 
-    database db("/Users/mazeyu/Downloads/coverage_3D/FSR.csv");
-//    generateFile("/Users/mazeyu/coverage/experiments/configuration files/exp4_R=100_large.txt");
+//
+    database db("/Users/mazeyu/Downloads/coverage_3D/extracted-data.csv", 500, 45, 40000, 42000, true);
+//
+//
+//    auto start = high_resolution_clock::now();
+//    cout << db.query(db.bound) << endl;
+//    cout << duration_cast<microseconds>(high_resolution_clock::now() - start).count() << endl;
+//    start = high_resolution_clock::now();
+//    cout << db.query2(db.bound) << endl;
+//    cout << duration_cast<microseconds>(high_resolution_clock::now() - start).count() << endl;
+//    start = high_resolution_clock::now();
+//    cout << db.query3(db.bound) << endl;
+//    cout << duration_cast<microseconds>(high_resolution_clock::now() - start).count() << endl;
+//
+
+
+//    db.generateContinuousQueries("demoQuery.txt", 30, 100);
+//    db.generateExpandingQueries("demoQuery2.txt", 30, 100);
+    db.generateBoundQueries("demoQuery3.txt");
+
+//    generateFile("/Users/mazeyu/coverage/experiments/configuration files/exp3.txt");
 }
