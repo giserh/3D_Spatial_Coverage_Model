@@ -42,7 +42,7 @@ make -j
 ~~~
 We assume your executive files are in sub-folder **build**.
 
-###Evaluation of Monte-Carlo Algorithm
+### Evaluation of Monte-Carlo Algorithm
 We proposed Monte-Carlo Algorithm in our paper, to validate its efficiency, we need to use pure geometry operation in comparison, which is implemented using Python library pycsg. This is why we need Python.
 Since it will take too much time to finish pure geometric operations on ECM and WCM, we only show the case of VCM. But it will still take several hours.
 
@@ -52,7 +52,7 @@ Since it will take too much time to finish pure geometric operations on ECM and 
  
  
 
-###Evaluation of other experiment
+### Evaluation of other experiment
 Other experiments do not involve pure geometry computation so can be done with pure C++ code.
 
 In folder **experiments/configuration files**, you can see many files like this:
