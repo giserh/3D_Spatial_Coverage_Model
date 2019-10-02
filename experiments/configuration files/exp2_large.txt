@@ -1,5 +1,5 @@
 title: exp2_with_alg2_large
-dataset: /Users/mazeyu/Downloads/coverage_3D/extracted-data.csv
+dataset: ../dataset_large.csv
 alg: 2, 2, 2, 2
 angles: 2, 4, 8, 16
 cells: 0, 0, 0, 0

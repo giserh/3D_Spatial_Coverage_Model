@@ -1,5 +1,5 @@
 title: exp5_cubeSize=200,alg=1,2,3
-dataset: /Users/mazeyu/Downloads/coverage_3D/FSR.csv
+dataset: ../dataset_small.csv
 alg: 1, 2, 3
 angles: 0, 8, 8
 cells: 0, 0, 8

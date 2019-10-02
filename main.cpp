@@ -1,8 +1,8 @@
 #include "database.h"
 #include <iomanip>
 
-//database db("/Users/mazeyu/Downloads/coverage_3D/FSR.csv");
 
+// Given configurations, this function can automatically generate result experiment files as the paper needs
 
 void generateFile(string infoFile) {
     ifstream info(infoFile);
@@ -177,8 +177,8 @@ void generateFile(string infoFile) {
 
 int main() {
 
-//
-    database db("/Users/mazeyu/Downloads/coverage_3D/extracted-data.csv", 500, 45, 40000, 42000, true);
+    // initialize a database with a file path and the parameters
+//    database db("dataset_large.csv", 500, 45, 40000, 42000, true);
 //
 //
 //    auto start = high_resolution_clock::now();
@@ -197,5 +197,5 @@ int main() {
 //    db.generateExpandingQueries("demoQuery2.txt", 30, 100);
 //    db.generateBoundQueries("demoQuery3.txt");
 
-    generateFile("/Users/mazeyu/coverage/experiments/configuration files/exp3.txt");
+    generateFile("../experiments/configuration files/exp3.txt");
 }

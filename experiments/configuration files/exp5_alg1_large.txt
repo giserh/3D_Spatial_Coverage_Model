@@ -1,5 +1,5 @@
 title: exp5_with_alg1_large
-dataset: /Users/mazeyu/Downloads/coverage_3D/extracted-data.csv
+dataset: ../dataset_large.csv
 alg: 1
 angles: 0
 cells: 0

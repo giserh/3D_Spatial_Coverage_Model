@@ -1,5 +1,5 @@
 title: exp5_with_alg3_large
-dataset: /Users/mazeyu/Downloads/coverage_3D/extracted-data.csv
+dataset: ../dataset_large.csv
 alg: 3
 angles: 8
 cells: 8

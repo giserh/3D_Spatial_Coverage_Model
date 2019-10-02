@@ -1,5 +1,5 @@
 title: exp5_cubeSize=200,alg=1,2,3_large
-dataset: /Users/mazeyu/Downloads/coverage_3D/extracted-data.csv
+dataset: ../dataset_large.csv
 alg: 1, 2, 3
 angles: 0, 8, 8
 cells: 0, 0, 8

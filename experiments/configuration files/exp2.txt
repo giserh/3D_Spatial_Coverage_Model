@@ -1,5 +1,5 @@
 title: exp2_with_alg2
-dataset: /Users/mazeyu/Downloads/coverage_3D/FSR.csv
+dataset: ../dataset_small.csv
 alg: 2, 2, 2, 2
 angles: 2, 4, 8, 16
 cells: 0, 0, 0, 0
