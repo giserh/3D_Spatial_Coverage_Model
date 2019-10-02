@@ -84,7 +84,7 @@ After specifying all parameters. Run the command:
 ~~~
 And you will find the experiment result file, **exp1.csv** in this example. It is like this:
 
-![](csv file.png)
+![]("csv file.png")
 
 Another file **query_exp1.txt** is also generated in accompany. For user's convenience, most experiment results mentioned in the paper are contained in the folder **experiment**. (one or two other experements requires change of macro in source code, so we will omit it here)
 
