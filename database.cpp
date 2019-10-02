@@ -4,13 +4,16 @@
 
 #include "database.h"
 
-#define SUBSETTING
-//#define KDTREE
+#define SUBSETTING // This MACRO is for test of the effect of subsetting
 
-#define M 10000
+//#define KDTREE // This MACRO is to enable KD-tree, but we found that in current dataset, it doesn't have much effect because this dataset is still not big enough
+
+
+#define M 10000 // divide the region into M * M * M when generating random points
 
 #include <ctime>
 
+// KD-tree building, independent of external library, but slower
 node *build(vector<point3> &pts, vector<int> &index, int l, int r, box B) {
     node *cur = new node;
     cur->b = B;
@@ -74,6 +77,7 @@ node *build(vector<point3> &pts, vector<int> &index, int l, int r, box B) {
 }
 
 
+// class database, which host all data and perform calculations
 database::database(string dataFile, double R, double alpha, int st, int ed, bool extrinsic) : Rv(R), alpha(alpha) {
     FILE *fp;
     fp = fopen(dataFile.c_str(), "r");

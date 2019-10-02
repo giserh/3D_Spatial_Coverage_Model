@@ -195,7 +195,7 @@ int main() {
 
 //    db.generateContinuousQueries("demoQuery.txt", 30, 100);
 //    db.generateExpandingQueries("demoQuery2.txt", 30, 100);
-    db.generateBoundQueries("demoQuery3.txt");
+//    db.generateBoundQueries("demoQuery3.txt");
 
-//    generateFile("/Users/mazeyu/coverage/experiments/configuration files/exp3.txt");
+    generateFile("/Users/mazeyu/coverage/experiments/configuration files/exp3.txt");
 }
