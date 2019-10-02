@@ -7,4 +7,3 @@ add_executable(alg1 alg1.cpp )
 add_executable(alg3 alg3.cpp)
 
 add_executable(main main.cpp database.cpp database.h)
-

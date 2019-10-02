@@ -1,0 +1,7 @@
+cmake-build-debug
+a.out
+VCM.c
+VCM.js
+VCM.wasm
+VCM.cpp
+.idea
