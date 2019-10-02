@@ -79,6 +79,8 @@ node *build(vector<point3> &pts, vector<int> &index, int l, int r, box B) {
 
 // class database, which host all data and perform calculations
 database::database(string dataFile, double R, double alpha, int st, int ed, bool extrinsic) : Rv(R), alpha(alpha) {
+    // R and alpha are FOV parameters, st and ed can specify which segment of the whole data to use,
+    // extrinsic is settign for the Euler angles, true for default
     FILE *fp;
     fp = fopen(dataFile.c_str(), "r");
     char x[100];
@@ -115,6 +117,7 @@ database::database(string dataFile, double R, double alpha, int st, int ed, bool
     hgt_min = 1e9;
     hgt_max = -1e9;
 
+    // Generating fov polyhedra
     for (int i = 0; i < cnt; i++) {
         if (lat[i] < lat_min) lat_min = lat[i];
         if (lat[i] > lat_max) lat_max = lat[i];
@@ -226,7 +229,7 @@ double det(double a[3][3]) {
            a[0][2] * a[1][0] * a[2][1] - a[0][2] * a[1][1] * a[2][0];
 }
 
-
+// find index using KD-tree
 vector<int> findInd(node *cur, box B, vector<point3> &points, vector<int> &index) {
     if (cur == NULL || cur->l == cur->r) return vector<int>();
     if (cur->lc == NULL) {
@@ -325,13 +328,15 @@ double database::query_alwayssubsetting(box q, int threadNum) {
 
 }
 
-
+// return the result of VCM, can be multi-thread, 10 threads for default
 double database::query(box q, int threadNum) {
     int faces[6][3] = {2, 1, 0, 4, 2, 0, 3, 4, 0, 1, 3, 0, 1, 2, 3, 3, 2, 4};
 
 
     thread threads[threadNum];
     int iter = int(1000.0 / threadNum + 0.99);
+    // total iteration number is 1000
+
     double ans[threadNum];
     vector<int> index;
 
@@ -409,6 +414,7 @@ double database::query(box q, int threadNum) {
 
 }
 
+// return the result of ECM
 
 double database::query2(box q, int angles, int threadNum) {
     int faces[6][3] = {2, 1, 0, 4, 2, 0, 3, 4, 0, 1, 3, 0, 1, 2, 3, 3, 2, 4};
@@ -489,6 +495,7 @@ inline double sqr(double x) {
     return x * x;
 }
 
+// return the result of WCM
 double database::query3(box q, int angles, int cells, int threadNum) {
     int faces[6][3] = {2, 1, 0, 4, 2, 0, 3, 4, 0, 1, 3, 0, 1, 2, 3, 3, 2, 4};
 
@@ -549,6 +556,8 @@ double database::query3(box q, int angles, int cells, int threadNum) {
 //                cout << weights[i][j][k] << " ";
 //    cout << endl;
     int iter = int(1000.0 / cells / cells / cells / angles + 0.99);
+            // divide the iteration number into each small cells
+
     thread threads[threadNum];
     double ans[threadNum];
 
@@ -614,6 +623,7 @@ double database::query3(box q, int angles, int cells, int threadNum) {
 
 }
 
+
 void database::generateQueries(string file, int n) {
     FILE *fp;
     fp = fopen(file.c_str(), "w");
@@ -628,6 +638,7 @@ void database::generateQueries(string file, int n) {
 
 }
 
+// for demo use, can be ignored now
 void database::generateContinuousQueries(string file, int n, double size) {
     FILE *fp;
     fp = fopen(file.c_str(), "w");
@@ -653,6 +664,7 @@ void database::generateContinuousQueries(string file, int n, double size) {
     fclose(fp);
 }
 
+// for demo use, can be ignored now
 void database::generateExpandingQueries(string file, int n, double size0) {
     FILE *fp;
     fp = fopen(file.c_str(), "w");
@@ -682,6 +694,7 @@ void database::generateExpandingQueries(string file, int n, double size0) {
     fclose(fp);
 }
 
+// for demo use, can be ignored now
 void database::generateRisingQueries(string file, int n, double size) {
     FILE *fp;
     fp = fopen(file.c_str(), "w");
@@ -723,6 +736,7 @@ void database::generateRisingQueries(string file, int n, double size) {
     fclose(fp);
 }
 
+// for demo use, can be ignored now
 void database::generateBoundQueries(string file) {
     FILE *fp;
     fp = fopen(file.c_str(), "w");
@@ -755,7 +769,7 @@ void database::generateBoundQueries(string file) {
 }
 
 
-
+// generate cube queries that is guaranteed to intersect with at least one FOV
 void database::generateQueriesGuaranteeIntersection(string file, int n, double size) {
     FILE *fp;
     fp = fopen(file.c_str(), "w");

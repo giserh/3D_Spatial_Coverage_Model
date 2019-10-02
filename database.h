@@ -20,6 +20,7 @@
 using namespace std;
 using namespace std::chrono;
 
+// bounding box
 
 struct box {
     double x[2], y[2], z[2];
@@ -30,6 +31,7 @@ struct box {
     }
 };
 
+// points struct
 struct point3 {
     double a[3];
     double &operator [] (int i) {
@@ -45,6 +47,7 @@ struct points53 {
 };
 
 
+// KD-tree node
 struct node {
     node *lc, *rc;
     box b;
@@ -53,7 +56,7 @@ struct node {
 };
 
 
-
+// class database, which host all data and perform calculations
 class database {
 
 
