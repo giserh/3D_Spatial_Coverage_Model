@@ -175,7 +175,7 @@ void generateFile(string infoFile) {
 
 
 
-int main() {
+int main(int argc, char **argv) {
 
     // initialize a database with a file path and the parameters
 //    database db("dataset_large.csv", 500, 45, 40000, 42000, true);
@@ -196,6 +196,6 @@ int main() {
 //    db.generateContinuousQueries("demoQuery.txt", 30, 100);
 //    db.generateExpandingQueries("demoQuery2.txt", 30, 100);
 //    db.generateBoundQueries("demoQuery3.txt");
-
-    generateFile("../experiments/configuration files/exp3.txt");
+    string s = argv[1];
+    generateFile(s);
 }

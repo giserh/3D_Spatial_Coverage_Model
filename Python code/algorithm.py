@@ -161,17 +161,17 @@ def algorithm(arg):
 if __name__ == '__main__':
 
 
-    # arg = {'type': 1,
-    #        'dataset': 2,
-    #        'angles': None,
-    #        'cells': None,
-    #        'size': 0.1,
-    #        'Rv': 0.05,
-    #        'alpha': 45,
-    #        'path': 'result1_MC.pkl',
-    #        'query': 'query1.pkl',
-    #        'method': 'MC'}
-    # algorithm(arg)
+    arg = {'type': 1,
+           'dataset': 2,
+           'angles': None,
+           'cells': None,
+           'size': 0.1,
+           'Rv': 0.05,
+           'alpha': 45,
+           'path': 'result1_MC.pkl',
+           'query': 'query1.pkl',
+           'method': 'MC'}
+    algorithm(arg)
 
     arg = {'type': 1,
            'dataset': 2,
