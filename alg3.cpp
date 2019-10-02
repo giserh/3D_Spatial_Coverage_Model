@@ -32,7 +32,7 @@ inline double sqr(double x) {
 
 int main() {
     srand(time(0));
-    freopen("/Users/mazeyu/Downloads/coverage_3D/coverage.in", "r", stdin);
+    freopen("../Python code/coverage.in", "r", stdin);
     scanf("%lf%lf%lf%lf%lf%lf", &x[0], &x[1], &y[0], &y[1], &z[0], &z[1]);
 
     scanf("%d", &n);
@@ -136,7 +136,7 @@ int main() {
     double ans1 = cnt * 1.0 / iter / 8 / cells / cells / cells;
 
     printf("%lf\n", ans1);
-    freopen("/Users/mazeyu/Downloads/coverage_3D/coverage.out", "w", stdout);
+    freopen("../Python code/coverage.out", "w", stdout);
     printf("%lf\n", ans1);
 
 
