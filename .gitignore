@@ -5,3 +5,5 @@ VCM.js
 VCM.wasm
 VCM.cpp
 .idea
+.DS_Store
+.gitignore
